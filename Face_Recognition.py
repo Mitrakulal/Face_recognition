@@ -28,7 +28,7 @@ for file in os.listdir(EMBEDDINGS_DIR):
                 Know_embed.append(emb)
                 Know_name.append(name)
    
-def update_identity(current_name):
+#def update_identity(current_name):
     
              
 mp_face_detection=mp.solutions.face_detection
