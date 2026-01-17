@@ -7,6 +7,11 @@ import os
 
 Know_embed=[]
 Know_name=[]
+Frame_interval=5
+hist_size=7
+name_hist=[]
+frame_count=0
+last_name=[]
 
 EMBEDDINGS_DIR="embeddings"
 
@@ -22,7 +27,10 @@ for file in os.listdir(EMBEDDINGS_DIR):
             for emb in data:
                 Know_embed.append(emb)
                 Know_name.append(name)
-                
+   
+def update_identity(current_name):
+    
+             
 mp_face_detection=mp.solutions.face_detection
 
 with mp_face_detection.FaceDetection(
