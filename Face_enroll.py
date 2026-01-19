@@ -12,8 +12,6 @@ required_stable=15
 move_thresh=10
 MAX_em=10
 
-
-
 prev_pos=None
 embeddings=[]
 
