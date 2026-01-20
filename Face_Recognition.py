@@ -3,11 +3,20 @@ import numpy as np
 import mediapipe as mp
 import face_recognition
 import os 
+from collections import Counter
 
 
 
 Know_embed=[]
 Know_name=[]
+
+Threshold=0.4
+
+Frame_interval=5
+hist_size=7
+name_hist=[]
+frame_count=0
+last_name="Unknown"
 
 EMBEDDINGS_DIR="embeddings"
 
@@ -24,6 +33,32 @@ for file in os.listdir(EMBEDDINGS_DIR):
                 Know_embed.append(emb)
                 Know_name.append(name)
                 
+# def recognize(
+#                 frame,
+#                 bbox,
+#                 Known_embed,
+#                 Known_name
+                
+#               ):
+   
+def update_identity(current_name):
+    global name_hist,last_name
+    
+    if current_name is None :
+        return last_name
+    
+    name_hist.append(current_name)
+    
+    if len(name_hist)>hist_size:
+        name_hist.pop(0)
+        
+    stable_name= Counter(name_hist).most_common(1)[0][0]
+    
+    last_name=stable_name
+    
+    return last_name
+    
+             
 mp_face_detection=mp.solutions.face_detection
 
 with mp_face_detection.FaceDetection(
@@ -40,6 +75,7 @@ with mp_face_detection.FaceDetection(
 
     while True:
         ret, frame = cap.read()
+        frame_count +=1
         if not ret:
             continue
     
@@ -74,41 +110,50 @@ with mp_face_detection.FaceDetection(
             left = max(0, left)
             right = min(w, right)
             bottom = min(h, bottom)
-            
-            encodings=face_recognition.face_encodings(
-                    rgb,
-                    known_face_locations=[(top,right,bottom,left)]
-                )
-            
-            if not encodings :
-                continue
-            
-            current_embedding = encodings[0]
-            
-            distance=face_recognition.face_distance(
-                Know_embed,
-                current_embedding
-            )
-            
-            best_index=np.argmin(distance)
-            best_distance=distance[best_index]
-            
-            Threshold=0.4
-            
-            if best_distance <Threshold:
-                name=Know_name[best_index]
-            else:
-                name="Unknown"
+            current_name=None
+        
+
+            if frame_count % Frame_interval ==0:
                 
+                encodings=face_recognition.face_encodings(
+                        rgb,
+                        known_face_locations=[(top,right,bottom,left)]
+                    )
+                
+                if encodings :
+                    
+                
+                    current_embedding = encodings[0]
+                    
+                    distance=face_recognition.face_distance(
+                        Know_embed,
+                        current_embedding
+                    )
+                    
+                    best_index=np.argmin(distance)
+                    best_distance=distance[best_index]
+                    
+                    
+                    
+                    if best_distance <Threshold:
+                        current_name=Know_name[best_index]
+                    else:
+                        current_name="Unknown"
+                else:
+                    current_name="Unknown"
+            stable_name=update_identity(current_name)
             cv2.putText(
                 frame,
-                name,
+                stable_name,
                 (x, y - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.8,
                 (0, 255, 0),
                 2
                 )
+        else:
+            stable_name = update_identity(None)
+                
         cv2.imshow("Enrollment",frame)
                 
         if cv2.waitKey(1) & 0xFF == ord('q'):
