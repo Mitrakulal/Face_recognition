@@ -11,6 +11,7 @@ Know_embed=[]
 Know_name=[]
 
 Threshold=0.4
+confidence=0.0
 
 Frame_interval=5
 hist_size=7
@@ -137,8 +138,10 @@ with mp_face_detection.FaceDetection(
                     
                     if best_distance <Threshold:
                         current_name=Know_name[best_index]
+                        confidence = max(0, (Threshold - best_distance) / Threshold) * 100
                     else:
                         current_name="Unknown"
+                        confidence=0.0
                 else:
                     current_name="Unknown"
             stable_name=update_identity(current_name)
@@ -148,7 +151,16 @@ with mp_face_detection.FaceDetection(
                 (x, y - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.8,
-                (0, 255, 0),
+                (255, 255, 0),
+                2
+                )
+            cv2.putText(
+                frame,
+                f"Conf:{confidence:.2f}%",
+                (x, y + box_h + 25),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (255, 255, 0),
                 2
                 )
         else:
