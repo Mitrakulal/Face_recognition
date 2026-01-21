@@ -32,8 +32,7 @@ lab_vision/
 - OpenCV (`cv2`)
 - MediaPipe
 - face_recognition
-- NumPy
-
+- NumPy 1.26.4 (other versions are not compatible with OpenCV)
 ## Installation
 
 1. Navigate to the project directory:
@@ -42,8 +41,12 @@ cd lab_vision
 ```
 
 2. Install required packages:
-```bash
-pip install opencv-python mediapipe face_recognition numpy
+Install required packages with compatible versions:
+```
+pip install opencv-python
+pip install mediapipe
+pip install face_recognition
+pip install numpy==1.26.4
 ```
 
 3. Ensure the `embeddings/` directory exists (created automatically during first enrollment)
