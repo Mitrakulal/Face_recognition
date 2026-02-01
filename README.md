@@ -28,6 +28,7 @@ lab_vision/
 
 ## Requirements
 
+<<<<<<< HEAD
 - **Python 3.x** - Python programming language
   ```bash
   python --version
@@ -53,6 +54,13 @@ lab_vision/
   pip install numpy==1.26.4
   ```
 
+=======
+- Python 3.x
+- OpenCV (`cv2`)
+- MediaPipe
+- face_recognition
+- NumPy 1.26.4 (other versions are not compatible with OpenCV)
+>>>>>>> a5496ac293892dad17ed415cc41903606d10dc46
 ## Installation
 
 1. Navigate to the project directory:
@@ -60,17 +68,26 @@ lab_vision/
 cd lab_vision
 ```
 
+<<<<<<< HEAD
 2. Install required packages with compatible versions:
 ```bash
+=======
+2. Install required packages:
+Install required packages with compatible versions:
+```
+>>>>>>> a5496ac293892dad17ed415cc41903606d10dc46
 pip install opencv-python
 pip install mediapipe
 pip install face_recognition
 pip install numpy==1.26.4
+<<<<<<< HEAD
 ```
 
 Or install all at once:
 ```bash
 pip install opencv-python mediapipe face_recognition numpy==1.26.4
+=======
+>>>>>>> a5496ac293892dad17ed415cc41903606d10dc46
 ```
 
 3. Ensure the `embeddings/` directory exists (created automatically during first enrollment)
