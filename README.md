@@ -1,178 +1,150 @@
-# Face Recognition + RAG Backend Project
+# CHALLENGERS AI Assistant
 
-This project contains two working AI modules organized for future backend integration with Flask:
+RAG + Face Recognition + Session Memory assistant for CHALLENGERS club.
 
-- Face recognition module for enrollment and realtime identity matching
-- RAG module for PDF-based question answering using FAISS and Gemini
+## What It Does
 
-The folder structure is already prepared for future API development in Flask.
+- Chat with club knowledge using FAISS retrieval + Gemini response generation.
+- Detect known users from webcam and store identity in session.
+- Keep short-term conversation memory (last 5 messages) for continuity.
+- Inject detected user identity into chat queries when available.
 
-## Current Project Status
-
-- Face module is runnable from backend/face_system
-- RAG module is runnable from backend/rag_system
-- Flask integration folder is ready at backend/flask_app (currently empty)
-
-## Project Structure
+## Current Architecture
 
 ```text
 project_alonee/
+|- app/
+|  |- main.py
+|  `- flask_app.py
 |- backend/
-|  |- face_system/
-|  |  |- Face_enroll.py
-|  |  |- Face_Recognition.py
-|  |  `- embeddings/
-|  |- rag_system/
-|  |  |- app.py
+|  |- config/
+|  |  `- settings.py
+|  |- core/
+|  |  `- controller.py
+|  |- rag/
+|  |  |- rag.py
 |  |  |- store.py
-|  |  |- challengers_scraper.pdf
 |  |  `- faiss_index/
 |  |     |- index.faiss
 |  |     `- index.pkl
-|  `- flask_app/
+|  `- vision/
+|     |- enroll.py
+|     |- recognition.py
+|     |- vision.py
+|     `- embeddings/
+|- data/
+|  `- challengers_scraper.pdf
+|- requirements.txt
 `- README.md
 ```
 
-## What Each Module Does
+## Memory Behavior
 
-### Face System
-
-- Enrolls a person by capturing multiple stable face embeddings
-- Saves embeddings into .npy files inside embeddings/
-- Performs realtime recognition with distance thresholding and temporal smoothing
-
-### RAG System
-
-- Reads PDF source content
-- Splits text into chunks
-- Builds FAISS vector index for retrieval
-- Uses retrieved context with Gemini for question answering
+- `user_name` is stored in session after successful camera detection.
+- `chat_history` stores user/assistant/system messages.
+- Only the latest 5 messages are sent to the LLM:
+  - `history_text = "\n".join(chat_history[-5:])`
+- RAG retrieval remains fixed at `k=3`.
 
 ## Prerequisites
 
 - Python 3.11 recommended
-- Webcam required for face enrollment/recognition
-- Gemini API key for RAG chatbot
+- Webcam for face detection/enrollment
+- Gemini API key
+- Internet on first run for sentence-transformer model download
 
-## Environment Setup (Windows PowerShell)
+## Setup (Windows PowerShell)
 
 From project root:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 ```
 
-If script execution is blocked:
+If `face_recognition` install fails:
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
-```
-
-## Install Dependencies
-
-Install core dependencies:
-
-```powershell
-pip install opencv-python opencv-contrib-python mediapipe==0.10.14 numpy
 pip install dlib-bin
 pip install face_recognition --no-deps
-pip install python-dotenv langchain langchain-community langchain-text-splitters sentence-transformers faiss-cpu pymupdf google-genai
 ```
 
-## Configure Environment Variables
-
-Create a .env file in project root:
+Create `.env` in project root:
 
 ```env
 GEMINI_API_KEY=your_api_key_here
 ```
 
-## Run Face Enrollment
+## Build / Refresh RAG Index
+
+`store.py` currently loads `challengers_scraper.pdf` from the working directory.  
+If you rebuild index, ensure the PDF is accessible to that script path.
+
+Current files used by runtime:
+- PDF source: `data/challengers_scraper.pdf`
+- Index used by app: `backend/rag/faiss_index/`
+
+## Run Assistant
+
+Always use project virtual env interpreter:
 
 ```powershell
-cd backend/face_system
-python Face_enroll.py
+.\.venv\Scripts\python.exe app\main.py
 ```
 
-Controls:
+Menu:
+- `1` Chat mode
+- `2` Camera mode (detect user and store identity)
+- `3` Exit
 
-- Press e to start enrollment
-- Enter person name
-- Keep face stable for capture
-- Press q to quit
+Recommended flow:
+1. Run camera mode first to detect a known face.
+2. Use chat mode for memory-aware responses.
 
-Output:
+## Key Runtime Notes
 
-- Embeddings are saved as embeddings/<name>.npy
+- `app/main.py` now resolves FAISS index path relative to project root.
+- `backend/vision/vision.py` now resolves embeddings path relative to its module folder.
+- Chat continuity is session-based only (memory resets when program restarts).
 
-## Run Face Recognition
+## Troubleshooting
+
+### `No module named cv2` or `No module named face_recognition`
+
+You are likely using the wrong Python interpreter.
+
+Check interpreter:
 
 ```powershell
-cd backend/face_system
-python Face_Recognition.py
+python -c "import sys; print(sys.executable)"
+.\.venv\Scripts\python.exe -c "import sys; print(sys.executable)"
 ```
 
-Important:
-
-- Enroll at least one person before running recognition
-- If embeddings folder is empty, recognition may fail
-
-## Build RAG Index
+Run app with:
 
 ```powershell
-cd backend/rag_system
-python store.py
+.\.venv\Scripts\python.exe app\main.py
 ```
 
-This generates/updates:
+### HuggingFace model download/network errors
 
-- faiss_index/index.faiss
-- faiss_index/index.pkl
-
-## Run RAG Chatbot
-
-```powershell
-cd backend/rag_system
-python app.py
-```
-
-You can then ask questions in terminal using retrieved PDF context.
-
-## Common Issues
-
-### No module named cv2
-
-- Activate the correct virtual environment
-- Confirm interpreter points to .venv/Scripts/python.exe
-
-### No module named face_recognition
-
-- Install dlib-bin first, then install face_recognition with --no-deps
-
-### mediapipe has no attribute solutions
-
-- Use mediapipe==0.10.14 in this project
+On first run, embedding model may attempt download from `huggingface.co`.  
+If blocked by network/firewall, app startup will fail before menu appears.
 
 ### Camera not opened
 
-- Close other apps using webcam
-- Try changing cv2.VideoCapture(0) to 1 or 2
+- Close other webcam apps.
+- Try changing camera index in vision scripts (`cv2.VideoCapture(0)` to `1` or `2`).
 
-### ValueError in Face_Recognition argmin
+### Recognition always unknown
 
-- This happens when no enrolled embeddings exist
-- Run Face_enroll.py first
+- Ensure `.npy` files exist in `backend/vision/embeddings/`.
+- Re-enroll using `backend/vision/enroll.py` if needed.
 
-## Future Development Direction
+## Next Planned Work
 
-The repository is prepared to combine both modules under Flask backend:
-
-- Move face and RAG logic into reusable services
-- Add REST endpoints in backend/flask_app
-- Add authentication, logging, and deployment configs
-
-## Author
-
-Mitra Kulal
+- Flask API integration in `app/flask_app.py`
+- Move orchestration into `backend/core/controller.py`
+- Centralize configs in `backend/config/settings.py`
+- Add auth, logging, and deployment setup
