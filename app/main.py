@@ -1,46 +1,38 @@
-
-import sys
 import os
-import cv2
+import sys
 from pathlib import Path
+
+from dotenv import load_dotenv
+from google import genai
+from langchain_community.vectorstores import FAISS
+from langchain_huggingface import HuggingFaceEmbeddings
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from backend.rag.rag import ask_rag
 from backend.vision.vision import detect_face
 
-from google import genai
-from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
-
-from dotenv import load_dotenv
-
-
-
-# 🔹 Load environment variables
 load_dotenv()
 
-# 🔹 Initialize Gemini client
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# 🔹 Load embedding model
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
-# 🔹 Load FAISS database
 BASE_DIR = Path(__file__).resolve().parent.parent
 FAISS_INDEX_DIR = BASE_DIR / "backend" / "rag" / "faiss_index"
 
 db = FAISS.load_local(
     str(FAISS_INDEX_DIR),
     embedding_model,
-    allow_dangerous_deserialization=True
+    allow_dangerous_deserialization=True,
 )
 
 
-# 🔥 MAIN LOOP
 def main():
     print("CHALLENGERS AI Assistant Started")
+    user_name = None
+    chat_history = []
 
     while True:
         print("\nChoose Mode:")
@@ -50,27 +42,29 @@ def main():
 
         choice = input("Enter choice: ").strip()
 
-        # 🔹 Chat Mode
         if choice == "1":
             query = input("\nAsk: ")
-            answer = ask_rag(query, db, client)
-            print("\nAnswer:\n", answer)
 
-        # 🔹 Camera Mode
+            if user_name:
+                query = f"User name is {user_name}. {query}"
+
+            chat_history.append(f"User: {query}")
+            history_text = "\n".join(chat_history[-5:])
+
+            answer = ask_rag(query, db, client, history_text)
+            print("\nAnswer:\n", answer)
+            chat_history.append(f"Assistant: {answer}")
+
         elif choice == "2":
             name = detect_face()
 
-            if name:
-                print(f"\n👁️ Detected: {name}")
-
-                query = f"{name} has entered the CHALLENGERS club. Greet them and assist."
-                answer = ask_rag(query, db, client)
-
-                print("\nAssistant:\n", answer)
+            if name and name != "Unknown":
+                user_name = name
+                print(f"\nDetected: {user_name}")
+                chat_history.append(f"System: Detected user {user_name}")
             else:
                 print("\nNo face detected.")
 
-        # 🔹 Exit
         elif choice == "3":
             print("Exiting...")
             break
@@ -79,7 +73,5 @@ def main():
             print("Invalid choice. Try again.")
 
 
-# 🔹 Run program
 if __name__ == "__main__":
     main()
-
