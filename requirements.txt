@@ -11,4 +11,5 @@ langchain-text-splitters
 sentence-transformers
 faiss-cpu
 pymupdf
-google-genai
+requests
+langchain-huggingface

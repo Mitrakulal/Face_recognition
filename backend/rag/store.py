@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-loader = PyMuPDFLoader("challengers_scraper.pdf")
+loader = PyMuPDFLoader(str(__import__("pathlib").Path(__file__).resolve().parents[2] / "data" / "challengers_scraper.pdf"))
 documents = loader.load()
 
 
@@ -23,7 +23,7 @@ model = HuggingFaceEmbeddings(
 
 db=FAISS.from_documents(splits, model)
 
-db.save_local("faiss_index")
+db.save_local(str(__import__("pathlib").Path(__file__).resolve().parents[2] / "backend" / "rag" / "faiss_index"))
 
 # db = FAISS.load_local(
 #     "faiss_index",
