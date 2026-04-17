@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-from google import genai
+
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 
@@ -13,7 +13,7 @@ from backend.vision.vision import detect_face
 
 load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
 
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
@@ -31,11 +31,12 @@ db = FAISS.load_local(
 
 def main():
     print("CHALLENGERS AI Assistant Started")
+
     user_name = None
     chat_history = []
 
     while True:
-        print("\nChoose Mode:")
+        print("\n--- MENU ---")
         print("1. Chat")
         print("2. Camera (Face Recognition)")
         print("3. Exit")
@@ -43,17 +44,33 @@ def main():
         choice = input("Enter choice: ").strip()
 
         if choice == "1":
-            query = input("\nAsk: ")
+            raw_query = input("\nAsk: ")
 
+            if raw_query.lower() in ["exit", "quit"]:
+                break
+
+            query = raw_query
             if user_name:
-                query = f"User name is {user_name}. {query}"
+                query = f"User name is {user_name}. {raw_query}"
 
-            chat_history.append(f"User: {query}")
+            chat_history.append(f"User: {raw_query}")
+
             history_text = "\n".join(chat_history[-5:])
 
-            answer = ask_rag(query, db, client, history_text)
-            print("\nAnswer:\n", answer)
-            chat_history.append(f"Assistant: {answer}")
+            try:
+                print("\nAnswer:\n", end="")
+                answer = ask_rag(
+                    query,
+                    db,
+                    history_text,
+                    on_token=lambda token: print(token, end="", flush=True),
+                )
+                print()
+
+                chat_history.append(f"Assistant: {answer}")
+
+            except Exception:
+                print("\n⚠️ LLM not responding. Check Ollama.")
 
         elif choice == "2":
             name = detect_face()
@@ -61,7 +78,7 @@ def main():
             if name and name != "Unknown":
                 user_name = name
                 print(f"\nDetected: {user_name}")
-                chat_history.append(f"System: Detected user {user_name}")
+                chat_history.append(f"User name is {user_name}")
             else:
                 print("\nNo face detected.")
 
